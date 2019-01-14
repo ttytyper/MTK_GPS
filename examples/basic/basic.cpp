@@ -3,10 +3,7 @@
 #include <StreamDebugger.h>
 StreamDebugger gpsSerial(Serial1,Serial);
 
-TinyGPSPlus gps;
-TinyGPSCustom ackedCommand(gps,"PMTK001",1);
-TinyGPSCustom ackResponse(gps,"PMTK001",2);
-PMTK_GPS pmtk(gpsSerial, gps);
+PMTK_GPS pmtk(gpsSerial);
 void setup() {
 	while(!Serial);
 	Serial.begin(115200);
@@ -14,19 +11,11 @@ void setup() {
 }
 
 void loop() {
-	pmtk.reset();
-	Serial.print(F("Acked command: "));
-	Serial.println(ackedCommand.value());
-	Serial.print(F("Ack response: "));
-	Serial.println(ackResponse.value());
+	//pmtk.reset();
 	if(pmtk.periodicMode(PMTK_PERIODIC_STANDBY,3000,12000,18000,72000))
 		Serial.println(F("OK"));
 	else
 		Serial.println(F("NAK"));
-	Serial.print(F("Acked command: "));
-	Serial.println(ackedCommand.value());
-	Serial.print(F("Ack response: "));
-	Serial.println(ackResponse.value());
 	uint32_t start=millis();
 	while(millis()-start<5000) {
 		pmtk.readline();
