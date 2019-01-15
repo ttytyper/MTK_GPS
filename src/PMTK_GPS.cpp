@@ -54,23 +54,34 @@ bool PMTK_GPS::send(const unsigned int type, const char* data) {
 }
 
 bool PMTK_GPS::getAck(const unsigned int type) {
-	// Clear
-	ackedCommand.value(); ackResponse.value();
-	int attempts=3;
+	// Clear ackedCommand.isUpdated() and ackResponse.isUpdated()
+	ackedCommand.value();
+	ackResponse.value();
+	// The datasheet does not specify whether the response will be sent
+	// immediately. We inspect a few lines before giving up
+	int attempts=10;
 	for(int i=attempts; i>0; i--) {
-		readline(PMTK_READLINE_TIMEOUT);
-		//if(ackedCommand.isUpdated() || ackResponse.isUpdated()) {
-			//if((unsigned int)ackedCommand.value()==type) {
-				stream.print(F("Acked command: "));
-				stream.println(ackedCommand.value());
-				stream.print(F("Ack response: "));
-				stream.println(ackResponse.value());
-				stream.print(F("Expected: "));
-				stream.println(type);
-				if(strcmp(ackResponse.value(),"3")==0)
-					return(true);
-			//}
-		//}
+		if(readline(PMTK_READLINE_TIMEOUT)) {
+			if(true) { // || ackedCommand.isUpdated() && ackResponse.isUpdated()) {
+				//stream.print("ackResponse.isUpdated()==");
+				//stream.println(ackResponse.isUpdated());
+				//stream.print("ackedCommand.isUpdated()==");
+				//stream.println(ackedCommand.isUpdated());
+				//stream.print("ackResponse.value()==");
+				//stream.println(atol(ackResponse.value()));
+				//stream.print("ackedCommand.value()==");
+				//stream.println(atol(ackedCommand.value()));
+				if(atol(ackedCommand.value())==type) {
+					//stream.println("Type matched");
+					if(atol(ackResponse.value())==PMTK_CMD_SUCCESS)
+						return(true);
+					else
+						return(false);
+				}
+				//else
+			//		stream.println("Type did not match");
+			}
+		}
 	}
 	return(false);
 }
@@ -81,26 +92,43 @@ void PMTK_GPS::wakeup() {
 
 bool PMTK_GPS::reset() {
 	wakeup();
-	send(104);
+	send(PMTK_CMD_FULL_COLD_START);
+	//send(PMTK_SET_NMEA_BAUDRATE,0);
 	// Wakeup command is not acked, so we accept any line as success
 	return(readline());
 }
 
+bool PMTK_GPS::extendEphemerisTime(const unsigned int sv, const unsigned int snr, time_t extensionThreshold, time_t extension) {
+	// Longest possible data fields:
+	// 4,30,180000,3600000
+	// 1234567890123456789
+	char data[20]={};
+	sprintf(data,"%d,%d,%lu,%lu",
+		sv,
+		snr,
+		extensionThreshold,
+		extension
+	);
+	return(send(PMTK_SET_AL_DEE_CFG,data));
+}
+
 bool PMTK_GPS::periodicMode(const unsigned int type, const uint32_t runTime, const uint32_t sleepTime, const uint32_t secondRunTime, const uint32_t secondSleepTime) {
-	// Longest possible sentence
-	// $PMTK225,0,518400000,518400000,51840000,518400000*1B
-	// 1234567890123456789012345678901234567890123456789012
-	//
-	// But we only need to worry about the data fields:
+	// Longest possible data fields:
 	// 0,518400000,518400000,51840000,518400000
 	// 1234567890123456789012345678901234567890
-	char buf[41];
-	sprintf(buf,"%d,%lu", type, runTime);
-	if(sleepTime>0)
-		sprintf(&buf[strlen(buf)],",%lu",sleepTime);
-	if(secondRunTime>0)
-		sprintf(&buf[strlen(buf)],",%lu",secondRunTime);
-	if(secondSleepTime>0)
-		sprintf(&buf[strlen(buf)],",%lu",secondSleepTime);
-	return(send(225,buf));
+	char data[41]={};
+	sprintf(data,"%d", type);
+	if(runTime>0) {
+		sprintf(&data[strlen(data)],",%lu",runTime);
+		if(sleepTime>0) {
+			sprintf(&data[strlen(data)],",%lu",sleepTime);
+			if(secondRunTime>0) {
+				sprintf(&data[strlen(data)],",%lu",secondRunTime);
+				if(secondSleepTime>0) {
+					sprintf(&data[strlen(data)],",%lu",secondSleepTime);
+				}
+			}
+		}
+	}
+	return(send(PMTK_CMD_PERIODIC_MODE,data));
 }

@@ -11,13 +11,24 @@ void setup() {
 }
 
 void loop() {
+	// Reset, read a few lines, then throw out some commands and see if they stick
 	//pmtk.reset();
-	if(pmtk.periodicMode(PMTK_PERIODIC_STANDBY,3000,12000,18000,72000))
-		Serial.println(F("OK"));
-	else
-		Serial.println(F("NAK"));
 	uint32_t start=millis();
 	while(millis()-start<5000) {
 		pmtk.readline();
 	}
+	/*if(pmtk.periodicMode(PMTK_PERIODIC_NORMAL))
+		Serial.println("OK");
+	else
+		Serial.println("NAK");*/
+
+	/*if(pmtk.extendEphemerisTime(1,25,180000,60000))
+		Serial.println("OK");
+	else
+		Serial.println("NAK");*/
+
+	if(pmtk.periodicMode(PMTK_PERIODIC_STANDBY,3000,12000,18000,72000))
+		Serial.println("OK");
+	else
+		Serial.println("NAK");
 }
