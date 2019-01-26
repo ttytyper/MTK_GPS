@@ -1,10 +1,9 @@
 #include "PMTK_GPS.h"
 
-PMTK_GPS::PMTK_GPS(Stream& stream): stream(stream), ackType(*this,"PMTK001",1), ackResponse(*this,"PMTK001",2) {
-}
-
-int PMTK_GPS::getResponse() {
-	return(atoi(ackResponse.value()));
+PMTK_GPS::PMTK_GPS(Stream& stream):
+	stream(stream),
+	ackType(*this,"PMTK001",1),
+	ack(*this,"PMTK001",2) {
 }
 
 bool PMTK_GPS::loop() {
@@ -23,17 +22,37 @@ bool PMTK_GPS::wakeup() {
 	return(readline());
 }
 
-void PMTK_GPS::coldStart() {
-	wakeup();
-	send(PMTK_CMD_COLD_START,false);
+// Hot restart: Use all available data in the NV store
+void PMTK_GPS::hotStart() {
+	// It would appear that this command is not acked. Datasheet unclear
+	send(PMTK_CMD_HOT_START);
 }
 
+// Warm restart: Don't use ephemeris at restart
+void PMTK_GPS::warmStart() {
+	// It would appear that this command is not acked. Datasheet unclear
+	send(PMTK_CMD_WARM_START);
+}
+
+// Don't use time, position, almanacs and ephemeris at restart
+void PMTK_GPS::coldStart() {
+	// It would appear that this command is not acked. Datasheet unclear
+	send(PMTK_CMD_COLD_START);
+}
+
+// Perform cold restart and clear system/user configuration. In other words, reset to factory configuration
 void PMTK_GPS::fullColdStart() {
-	wakeup();
+	// It would appear that this command is not acked. Datasheet unclear
 	send(PMTK_CMD_FULL_COLD_START,false);
 }
 
-bool PMTK_GPS::extendEphemerisTime(const unsigned int sv, const unsigned int snr, time_t extensionThreshold, time_t extension) {
+// Extend time for receiving ephemeris data
+// Quote from the datasheet, which is a little hard to understand:
+// sv: It means the module need extend the time to receive more ephemeris data while the number of satellite without ephemeris data. Default 1, range 1-4
+// snr: It means the module needs to enable the ephemeris data receiving while the SNR of satellite is more than the setting value. Default 30, range 25-30
+// extensionThreshold: Extension time for ephemeris data receiving in ms. Default 1800000, range 40000-1800000
+// extension: Gap time between EPH data receiving. Default 60000, range 0-3600000
+int PMTK_GPS::extendEphemerisTime(const unsigned int sv, const unsigned int snr, time_t extensionThreshold, time_t extension) {
 	// Longest possible data fields:
 	// 4,30,180000,3600000
 	// 1234567890123456789
@@ -47,7 +66,7 @@ bool PMTK_GPS::extendEphemerisTime(const unsigned int sv, const unsigned int snr
 	return(send(PMTK_SET_AL_DEE_CFG,data));
 }
 
-bool PMTK_GPS::periodicMode(const unsigned int type, const uint32_t runTime, const uint32_t sleepTime, const uint32_t secondRunTime, const uint32_t secondSleepTime) {
+int PMTK_GPS::periodicMode(const unsigned int type, const uint32_t runTime, const uint32_t sleepTime, const uint32_t secondRunTime, const uint32_t secondSleepTime) {
 	// Longest possible data fields:
 	// 0,518400000,518400000,51840000,518400000
 	// 1234567890123456789012345678901234567890
@@ -68,7 +87,7 @@ bool PMTK_GPS::periodicMode(const unsigned int type, const uint32_t runTime, con
 	return(send(PMTK_CMD_PERIODIC_MODE,data));
 }
 
-/*** Plumbing below ***/
+// Plumbing {{{
 bool PMTK_GPS::readline(const time_t timeout) {
 	DEBUGLN("Readline was called");
 	time_t start=millis();
@@ -91,12 +110,12 @@ unsigned int PMTK_GPS::checksum(const char* data, char parity) {
 	return(parity);
 }
 
-bool PMTK_GPS::send(const unsigned int type, bool checkAck) {
+int PMTK_GPS::send(const unsigned int type, bool checkAck) {
 	char c[]={'\0'};
 	return(send(type,c,checkAck));
 }
 
-bool PMTK_GPS::send(const unsigned int type, const char* data, bool checkAck) {
+int PMTK_GPS::send(const unsigned int type, const char* data, bool checkAck) {
 	// Wake the module up first, in case a previous command has made it sleep
 	if(!wakeup())
 		return(false);
@@ -124,49 +143,38 @@ bool PMTK_GPS::send(const unsigned int type, const char* data, bool checkAck) {
 		return(true);
 }
 
-bool PMTK_GPS::getAck(const unsigned int type) {
-	// Clear ackType.isUpdated() and ackResponse.isUpdated()
+int PMTK_GPS::getAck(const unsigned int type) {
+	// Clear ackType.isUpdated() and ack.isUpdated()
 	ackType.value();
-	ackResponse.value();
-	// The datasheet does not specify whether the response will be sent
+	ack.value();
+	// The datasheet does not specify whether the ack will be sent
 	// immediately. We inspect a few lines before giving up
 	int attempts=10;
 	for(int i=attempts; i>0; i--) {
 		if(readline()) {
-			bool updated=(ackType.isUpdated()==1 && ackResponse.isUpdated()==1);
+			bool updated=(ackType.isUpdated()==1 && ack.isUpdated()==1);
 			unsigned long int gotType=atoi(ackType.value());
-			unsigned long int gotResponse=atoi(ackResponse.value());
+			unsigned long int gotAck=atoi(ack.value());
 			DEBUGLN();
 			DEBUG(F("Attempt: "));
 			DEBUG(i);
 			DEBUG(F("/"));
 			DEBUGLN(attempts);
-			DEBUG(F("Looking for response: "));
-			DEBUGLN(PMTK_RESPONSE_SUCCESS);
+			DEBUG(F("Looking for ack: "));
+			DEBUGLN(PMTK_ACK_SUCCESS);
 			DEBUG(F("Looking for type: "));
 			DEBUGLN(type);
 			DEBUG(F("Was updated: "));
 			DEBUGLN(updated);
-			DEBUG(F("ackResponse.value()=="));
+			DEBUG(F("ack.value()=="));
 			DEBUGLN(gotType);
 			DEBUG(F("ackType.value()=="));
-			DEBUGLN(gotResponse);
+			DEBUGLN(gotAck);
 			if(updated) {
 				DEBUGLN();
 				DEBUGLN(F("Updated"));
 				if(gotType==type) {
-					DEBUGLN();
-					DEBUGLN(F("Type matched"));
-					if(gotResponse==PMTK_RESPONSE_SUCCESS) {
-						DEBUGLN();
-						DEBUGLN(F("Correct response"));
-						return(true);
-					}
-					else {
-						DEBUGLN();
-						DEBUGLN(F("Incorrect response"));
-						return(false);
-					}
+					return(gotAck);
 				}
 				else {
 					DEBUGLN();
@@ -183,5 +191,6 @@ bool PMTK_GPS::getAck(const unsigned int type) {
 			DEBUGLN(F("readline failed"));
 		}
 	}
-	return(false);
+	return(PMTK_ACK_TIMEOUT);
 }
+// }}} Plumbing
