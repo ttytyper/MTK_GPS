@@ -31,6 +31,7 @@
 #define PMTK_CMD_FULL_COLD_START 104
 #define PMTK_SET_AL_DEE_CFG 223
 #define PMTK_CMD_PERIODIC_MODE 225
+#define PMTK_SET_NMEA_UPDATERATE 220
 #define PMTK_SET_NMEA_BAUDRATE 251
 
 /*** Operation modes for PMTK_CMD_PERIODIC_MODE ***/
@@ -50,7 +51,9 @@ class PMTK_GPS : public TinyGPSPlus {
 		void warmStart();
 		void coldStart();
 		void fullColdStart();
-		int extendEphemerisTime(const unsigned int sv=1, const unsigned int snr=30, time_t extensionThreshold=180000, time_t extension=60000);
+		int setNmeaUpdateRate(const int rate=1000);
+		void setNmeaBaudRate(const int rate=0);
+		int extendEphemerisTime(const unsigned int sv=1, const unsigned int snr=30, const time_t extensionThreshold=180000, const time_t extension=60000);
 		int periodicMode(const unsigned int type, const uint32_t runTime=0, const uint32_t sleepTime=0, const uint32_t secondRunTime=0, const uint32_t secondSleepTime=0);
 	private:
 		Stream& stream;

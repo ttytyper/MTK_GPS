@@ -2,11 +2,11 @@
 #include <StreamDebugger.h>
 
 // If you want to see all data to/from the GPS:
-StreamDebugger gpsSerial(Serial1,Serial);
-PMTK_GPS pmtk(gpsSerial);
+//StreamDebugger gpsSerial(Serial1,Serial);
+//PMTK_GPS pmtk(gpsSerial);
 
 // Normal operation
-//PMTK_GPS pmtk(Serial1);
+PMTK_GPS pmtk(Serial1);
 
 void printAck(int ack) {
 	switch(ack) {
@@ -26,8 +26,14 @@ void setup() {
 }
 
 void loop() {
-	Serial.println(F("Hot start"));
+	Serial.println(F("Hot start..."));
 	pmtk.hotStart();
+
+	Serial.print(F("Set NMEA update rate... "));
+	printAck(pmtk.setNmeaUpdateRate());
+
+	Serial.println(F("Set NMEA baud rate... "));
+	pmtk.setNmeaBaudRate();
 
 	Serial.print(F("Normal periodic mode... "));
 	printAck(pmtk.periodicMode(PMTK_PERIODIC_NORMAL));

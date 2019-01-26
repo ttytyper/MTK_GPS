@@ -25,19 +25,19 @@ bool PMTK_GPS::wakeup() {
 // Hot restart: Use all available data in the NV store
 void PMTK_GPS::hotStart() {
 	// It would appear that this command is not acked. Datasheet unclear
-	send(PMTK_CMD_HOT_START);
+	send(PMTK_CMD_HOT_START,false);
 }
 
 // Warm restart: Don't use ephemeris at restart
 void PMTK_GPS::warmStart() {
 	// It would appear that this command is not acked. Datasheet unclear
-	send(PMTK_CMD_WARM_START);
+	send(PMTK_CMD_WARM_START,false);
 }
 
 // Don't use time, position, almanacs and ephemeris at restart
 void PMTK_GPS::coldStart() {
 	// It would appear that this command is not acked. Datasheet unclear
-	send(PMTK_CMD_COLD_START);
+	send(PMTK_CMD_COLD_START,false);
 }
 
 // Perform cold restart and clear system/user configuration. In other words, reset to factory configuration
@@ -46,13 +46,32 @@ void PMTK_GPS::fullColdStart() {
 	send(PMTK_CMD_FULL_COLD_START,false);
 }
 
+// Valid range: 100-10000 (10 updates per second, to once per 10 seconds)
+int PMTK_GPS::setNmeaUpdateRate(const int rate) {
+	DEBUG(F("Setting update rate: "));
+	DEBUGLN(rate);
+	char buf[6]={};
+	sprintf(buf,"%d",rate);
+	return(send(PMTK_SET_NMEA_UPDATERATE,buf));
+}
+
+// Available baud rates: 4800, 9600, 14400, 19200, 38400, 57600, 115200
+void PMTK_GPS::setNmeaBaudRate(const int rate) {
+	DEBUG(F("Setting baud rate: "));
+	DEBUGLN(rate);
+	char buf[7]={};
+	sprintf(buf,"%d",rate);
+	// It would appear that this command is not acked. Datasheet unclear
+	send(PMTK_SET_NMEA_BAUDRATE,buf,false);
+}
+
 // Extend time for receiving ephemeris data
 // Quote from the datasheet, which is a little hard to understand:
 // sv: It means the module need extend the time to receive more ephemeris data while the number of satellite without ephemeris data. Default 1, range 1-4
 // snr: It means the module needs to enable the ephemeris data receiving while the SNR of satellite is more than the setting value. Default 30, range 25-30
 // extensionThreshold: Extension time for ephemeris data receiving in ms. Default 1800000, range 40000-1800000
 // extension: Gap time between EPH data receiving. Default 60000, range 0-3600000
-int PMTK_GPS::extendEphemerisTime(const unsigned int sv, const unsigned int snr, time_t extensionThreshold, time_t extension) {
+int PMTK_GPS::extendEphemerisTime(const unsigned int sv, const unsigned int snr, const time_t extensionThreshold, const time_t extension) {
 	// Longest possible data fields:
 	// 4,30,180000,3600000
 	// 1234567890123456789
