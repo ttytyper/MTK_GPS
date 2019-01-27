@@ -23,6 +23,7 @@
 #define PMTK_ACK_UNSUPPORTED 1
 #define PMTK_ACK_FAIL 2
 #define PMTK_ACK_SUCCESS 3
+typedef int pmtk_ack_t;
 
 /*** Command numbers ***/
 #define PMTK_CMD_HOT_START 101
@@ -46,22 +47,37 @@ class PMTK_GPS : public TinyGPSPlus {
 	public:
 		PMTK_GPS(Stream& stream);
 		bool loop();
-		bool wakeup();
+		void wakeup();
 		void hotStart();
 		void warmStart();
 		void coldStart();
 		void fullColdStart();
-		int setNmeaUpdateRate(const int rate=1000);
+		pmtk_ack_t setNmeaUpdateRate(const int rate=1000);
 		void setNmeaBaudRate(const int rate=0);
-		int extendEphemerisTime(const unsigned int sv=1, const unsigned int snr=30, const time_t extensionThreshold=180000, const time_t extension=60000);
-		int periodicMode(const unsigned int type, const uint32_t runTime=0, const uint32_t sleepTime=0, const uint32_t secondRunTime=0, const uint32_t secondSleepTime=0);
+		pmtk_ack_t extendEphemerisTime(
+			const unsigned int sv=1,
+			const unsigned int snr=30,
+			const time_t extensionThreshold=180000,
+			const time_t extension=60000);
+		pmtk_ack_t periodicMode(
+			const unsigned int mode,
+			const uint32_t runTime=0,
+			const uint32_t sleepTime=0,
+			const uint32_t secondRunTime=0,
+			const uint32_t secondSleepTime=0);
 	private:
 		Stream& stream;
 		TinyGPSCustom ackType;
 		TinyGPSCustom ack;
 		bool readline(const time_t timeout=PMTK_READLINE_TIMEOUT);
-		unsigned int checksum(const char* data, char parity=0);
-		int send(const unsigned int type, bool checkAck=true);
-		int send(const unsigned int type, const char* data, bool checkAck=true);
-		int getAck(const unsigned int type);
+		unsigned int checksum(const unsigned int data);
+		unsigned int checksum(const char* data);
+		char sendFields();
+		template<typename First, typename ... Next>
+			char sendFields(const First& first, const Next& ... next);
+		template<typename ... Param>
+			int sendWithAck(const unsigned int type, const Param& ... param);
+		template<typename ... Param>
+			void send(const unsigned int type, const Param& ... param);
+		pmtk_ack_t getAck(const unsigned int type);
 };

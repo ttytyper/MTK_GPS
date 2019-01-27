@@ -2,11 +2,11 @@
 #include <StreamDebugger.h>
 
 // If you want to see all data to/from the GPS:
-//StreamDebugger gpsSerial(Serial1,Serial);
-//PMTK_GPS pmtk(gpsSerial);
+StreamDebugger gpsSerial(Serial1,Serial);
+PMTK_GPS pmtk(gpsSerial);
 
 // Normal operation
-PMTK_GPS pmtk(Serial1);
+//PMTK_GPS pmtk(Serial1);
 
 void printAck(int ack) {
 	switch(ack) {
@@ -26,14 +26,11 @@ void setup() {
 }
 
 void loop() {
-	Serial.println(F("Hot start..."));
+	Serial.println(F("Hot start"));
 	pmtk.hotStart();
 
-	Serial.print(F("Set NMEA update rate... "));
-	printAck(pmtk.setNmeaUpdateRate());
-
-	Serial.println(F("Set NMEA baud rate... "));
-	pmtk.setNmeaBaudRate();
+	Serial.println(F("Set NMEA update rate"));
+	pmtk.setNmeaUpdateRate();
 
 	Serial.print(F("Normal periodic mode... "));
 	printAck(pmtk.periodicMode(PMTK_PERIODIC_NORMAL));
@@ -41,12 +38,15 @@ void loop() {
 	Serial.print(F("Extend ephemeris time... "));
 	printAck(pmtk.extendEphemerisTime(1,25,180000,60000));
 
-	Serial.print(F("Standby periodic mode... "));
+	Serial.print(F("Single standby periodic mode... "));
+	printAck(pmtk.periodicMode(PMTK_PERIODIC_STANDBY,3000,12000));
+
+	Serial.print(F("Second standy periodic mode... "));
 	printAck(pmtk.periodicMode(PMTK_PERIODIC_STANDBY,3000,12000,18000,72000));
 
-	// Idle for a while
+	Serial.println(F("Idling for a while"));
 	uint32_t start=millis();
-	while(millis()-start<15000) {
+	while(millis()-start<5000) {
 		pmtk.loop();
 	}
 }
