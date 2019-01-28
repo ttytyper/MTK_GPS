@@ -52,8 +52,8 @@ class PMTK_GPS : public TinyGPSPlus {
 		void warmStart();
 		void coldStart();
 		void fullColdStart();
-		pmtk_ack_t setNmeaUpdateRate(const int rate=1000);
-		void setNmeaBaudRate(const int rate=0);
+		pmtk_ack_t setNmeaUpdateRate(const unsigned int rate=1000);
+		pmtk_ack_t setNmeaBaudRate(const unsigned long int rate=0);
 		pmtk_ack_t extendEphemerisTime(
 			const unsigned int sv=1,
 			const unsigned int snr=30,
@@ -70,8 +70,8 @@ class PMTK_GPS : public TinyGPSPlus {
 		TinyGPSCustom ackType;
 		TinyGPSCustom ack;
 		bool readline(const time_t timeout=PMTK_READLINE_TIMEOUT);
-		unsigned int checksum(const unsigned int data);
-		unsigned int checksum(const char* data);
+		char checksum(const long unsigned int data);
+		char checksum(const char* data);
 		char sendFields();
 		template<typename First, typename ... Next>
 			char sendFields(const First& first, const Next& ... next);

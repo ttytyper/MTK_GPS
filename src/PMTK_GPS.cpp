@@ -45,18 +45,18 @@ void PMTK_GPS::fullColdStart() {
 }
 
 // Valid range: 100-10000 (10 updates per second, to once per 10 seconds)
-pmtk_ack_t PMTK_GPS::setNmeaUpdateRate(const int rate) {
+pmtk_ack_t PMTK_GPS::setNmeaUpdateRate(const unsigned int rate) {
 	DEBUG(F("Setting update rate: "));
 	DEBUGLN(rate);
 	return(sendWithAck(PMTK_SET_NMEA_UPDATERATE,rate));
 }
 
 // Available baud rates: 4800, 9600, 14400, 19200, 38400, 57600, 115200
-void PMTK_GPS::setNmeaBaudRate(const int rate) {
+pmtk_ack_t PMTK_GPS::setNmeaBaudRate(const long unsigned int rate) {
 	DEBUG(F("Setting baud rate: "));
 	// It would appear that this command is not acked. Datasheet unclear
 	//send(PMTK_SET_NMEA_BAUDRATE,buf,false);
-	send(PMTK_SET_NMEA_BAUDRATE,rate);
+	return(sendWithAck(PMTK_SET_NMEA_BAUDRATE,rate));
 }
 
 // Extend time for receiving ephemeris data
@@ -113,15 +113,13 @@ bool PMTK_GPS::readline(const time_t timeout) {
 	return(false);
 }
 
-// TODO: There has to be a more efficient way of finding the XOR parity of an
-// ASCII representation of an integer without involving char array buffers
-unsigned int PMTK_GPS::checksum(const unsigned int data) {
-	char buf[sizeof(unsigned int)+1]={};
-	sprintf(buf,"%d",data);
+char PMTK_GPS::checksum(const long unsigned int data) {
+	char buf[sizeof(long unsigned int)*8+1]={};
+	sprintf(buf,"%lu",data);
 	return(checksum(buf));
 }
 
-unsigned int PMTK_GPS::checksum(const char* data) {
+char PMTK_GPS::checksum(const char* data) {
 	char parity=0;
 	for(size_t i(0); i<strlen(data); i++) {
 		parity^=data[i];
