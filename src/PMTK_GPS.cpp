@@ -70,7 +70,7 @@ pmtk_ack_t PMTK_GPS::extendEphemerisTime(
 		const unsigned int snr,
 		const time_t extensionThreshold,
 		const time_t extension
-) {
+	) {
 	return(sendWithAck(
 		PMTK_SET_AL_DEE_CFG,
 		sv,
@@ -86,7 +86,7 @@ pmtk_ack_t PMTK_GPS::periodicMode(
 		const uint32_t sleepTime,
 		const uint32_t secondRunTime,
 		const uint32_t secondSleepTime
-) {
+	) {
 	return(sendWithAck(
 		PMTK_CMD_PERIODIC_MODE,
 		mode,
@@ -119,6 +119,7 @@ char PMTK_GPS::checksum(const long unsigned int data) {
 	return(checksum(buf));
 }
 
+// Calculates XOR parity of a char array
 char PMTK_GPS::checksum(const char* data) {
 	char parity=0;
 	for(size_t i(0); i<strlen(data); i++) {
@@ -127,6 +128,12 @@ char PMTK_GPS::checksum(const char* data) {
 	return(parity);
 }
 
+// Constructs and sends a part of an NMEA sentence with an arbitrary number of
+// comma-separated fields of arbitrary types, to be used as parameters for GPS
+// commands.
+//
+// Returns the XOR parity of the whole string, to be used for building the NMEA
+// suffix.
 template<typename First, typename ... Next>
 char PMTK_GPS::sendFields(const First& first, const Next& ... next) {
 	stream.print(',');
@@ -138,46 +145,28 @@ char PMTK_GPS::sendFields(const First& first, const Next& ... next) {
 	);
 }
 // sendFields(...) above calls itself recursively. On the final call there are
-// no more parameters left, and the sendFields() function below is called to
-// end the recursion
+// no more parameters left, and the empty sendFields() function below is called
+// to end the recursion
 char PMTK_GPS::sendFields() {
 	return(0);
 }
 
+// Some GPS commands are acknowledged by the GPS. This function is like send()
+// but additionally checks and returns the response from the GPS
 template<typename ... Param>
 int PMTK_GPS::sendWithAck(const unsigned int type, const Param& ... param) {
-	// Flush incoming buffer
+	// Flush incoming buffer so we don't have to potentially read a bunch of
+	// NMEA sentences before getting to the ack
 	loop();
 	send(type,param...);
-	return(getAck(type));
-}
 
-template<typename ... Param>
-void PMTK_GPS::send(const unsigned int type, const Param& ... param) {
-	// Wake the module up first, in case a previous command has made it sleep
-	wakeup();
-	stream.print("$");
-	stream.print(PMTK_TALKERID);
-	stream.print(type);
-
-	char suffix[6]; // Long enough for '*', checksum ("00") and linebreak ("\r\n"), plus null
-	sprintf(suffix,"*%02X\r\n",
-			checksum(PMTK_TALKERID)
-			^checksum(type)
-			^sendFields(param...) // This both sends the parameters and returns the parity of them
-	);
-	stream.print(suffix);
-	stream.flush();
-}
-
-pmtk_ack_t PMTK_GPS::getAck(const unsigned int type) {
 	// Clear ackType.isUpdated() and ack.isUpdated()
 	ackType.value();
 	ack.value();
+
 	// The datasheet does not specify whether the ack will be sent
 	// immediately. We inspect a few lines before giving up
-	int attempts=10;
-	for(int i=attempts; i>0; i--) {
+	for(int retries=10; retries>0; retries--) {
 		if(readline()) {
 			bool updated=(ackType.isUpdated()==1 && ack.isUpdated()==1);
 			unsigned long int gotType=atoi(ackType.value());
@@ -219,5 +208,27 @@ pmtk_ack_t PMTK_GPS::getAck(const unsigned int type) {
 		}
 	}
 	return(PMTK_ACK_TIMEOUT);
+}
+
+// Sends a GPS command with an arbitrary number of parameter fields. Every
+// command has a number (called type) specified in the datasheet for the GPS.
+// These command numbers are listed as macros in the header file for readability.
+template<typename ... Param>
+void PMTK_GPS::send(const unsigned int type, const Param& ... param) {
+	// Wake the module up first, in case a previous command has made it sleep
+	wakeup();
+	stream.print("$");
+	stream.print(PMTK_TALKERID);
+	stream.print(type);
+
+	char suffix[6]; // Long enough for '*', XOR parity ("00") and linebreak ("\r\n"), plus null
+	// Calculates the final XOR parity and constructs the NMEA suffix
+	sprintf(suffix,"*%02X\r\n",
+			checksum(PMTK_TALKERID)
+			^checksum(type)
+			^sendFields(param...)
+	);
+	stream.print(suffix);
+	stream.flush();
 }
 // }}} Plumbing
