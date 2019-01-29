@@ -1,3 +1,6 @@
+#ifndef PMTK_GPS_H
+#define PMTK_GPS_H
+
 // User can set PMTK_DEBUG to e.g. Serial to get debug output
 //#define PMTK_DEBUG Serial
 
@@ -81,3 +84,5 @@ class PMTK_GPS : public TinyGPSPlus {
 			void send(const unsigned int type, const Param& ... param);
 		pmtk_ack_t getAck(const unsigned int type);
 };
+
+#endif
