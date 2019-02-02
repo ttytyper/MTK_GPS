@@ -1,6 +1,6 @@
 {
 	"name": "MTK_GPS",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"keywords": "GPS, MT3318, MT3320, MT3339, MediaTek",
 	"description": "Library for talking to MediaTek GPS modules",
 	"repository":
