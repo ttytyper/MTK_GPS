@@ -13,8 +13,10 @@ TinyGPS++ itself requires one-way communication. You would use it's encode() fun
 	}
 
 
-Please refer to the [official datasheet] for a full explanation of all the functionality.
+Please refer to the [PMTK Packet User Manual] for a full explanation of all the functionality. It's also worth taking a look at the [MT3339 product specs]. uBlox also has some [interesting information].
 
 Only a few of the available commands have been added to the library at this point, but more are on their way. Most of them are pretty easy to add.
 
-[official datasheet]: https://cdn-shop.adafruit.com/datasheets/PMTK_A11.pdf
+[PMTK Packet User Manual]: https://cdn.sparkfun.com/assets/parts/1/2/2/8/0/PMTK_Packet_User_Manual.pdf
+[MT3339 product specs]: https://labs.mediatek.com/en/chipset/MT3339]
+[interesting information]: https://www.u-blox.com/sites/default/files/products/documents/IT530_DataSheet_%28FTX-HW-12008%29.pdf
