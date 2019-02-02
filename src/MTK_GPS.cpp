@@ -33,8 +33,8 @@ bool MTK_GPS::loop() {
 }
 
 void MTK_GPS::wakeup() {
-	DEBUGLN();
-	DEBUGLN(F("Waking up"));
+	MTK_DEBUGLN();
+	MTK_DEBUGLN(F("Waking up"));
 	stream.print('\n');
 }
 
@@ -64,14 +64,14 @@ void MTK_GPS::fullColdStart() {
 
 // Valid range: 100-10000 (10 updates per second, to once per 10 seconds)
 mtk_ack_t MTK_GPS::setNmeaUpdateRate(const unsigned int rate) {
-	DEBUG(F("Setting update rate: "));
-	DEBUGLN(rate);
+	MTK_DEBUG(F("Setting update rate: "));
+	MTK_DEBUGLN(rate);
 	return(sendWithAck(MTK_SET_NMEA_UPDATERATE,rate));
 }
 
 // Available baud rates: 4800, 9600, 14400, 19200, 38400, 57600, 115200
 mtk_ack_t MTK_GPS::setNmeaBaudRate(const long unsigned int rate) {
-	DEBUG(F("Setting baud rate: "));
+	MTK_DEBUG(F("Setting baud rate: "));
 	// It would appear that this command is not acked. Datasheet unclear
 	//send(MTK_SET_NMEA_BAUDRATE,buf,false);
 	return(sendWithAck(MTK_SET_NMEA_BAUDRATE,rate));
@@ -117,17 +117,17 @@ mtk_ack_t MTK_GPS::periodicMode(
 
 // Plumbing {{{
 bool MTK_GPS::readline(const time_t timeout) {
-	DEBUGLN("Readline was called");
+	MTK_DEBUGLN("Readline was called");
 	time_t start=millis();
 	while(millis()-start<timeout) {
 		if(loop()) {
-			DEBUGLN();
-			DEBUGLN(F("Parsed a GPS sentence"));
+			MTK_DEBUGLN();
+			MTK_DEBUGLN(F("Parsed a GPS sentence"));
 			return(true);
 		}
 	}
-	DEBUGLN();
-	DEBUGLN(F("Readline failed"));
+	MTK_DEBUGLN();
+	MTK_DEBUGLN(F("Readline failed"));
 	return(false);
 }
 
@@ -189,40 +189,38 @@ int MTK_GPS::sendWithAck(const unsigned int type, const Param& ... param) {
 			bool updated=(ackType.isUpdated()==1 && ack.isUpdated()==1);
 			unsigned long int gotType=atoi(ackType.value());
 			unsigned long int gotAck=atoi(ack.value());
-			DEBUGLN();
-			DEBUG(F("Attempt: "));
-			DEBUG(i);
-			DEBUG(F("/"));
-			DEBUGLN(attempts);
-			DEBUG(F("Looking for ack: "));
-			DEBUGLN(MTK_ACK_SUCCESS);
-			DEBUG(F("Looking for type: "));
-			DEBUGLN(type);
-			DEBUG(F("Was updated: "));
-			DEBUGLN(updated);
-			DEBUG(F("ack.value()=="));
-			DEBUGLN(gotType);
-			DEBUG(F("ackType.value()=="));
-			DEBUGLN(gotAck);
+			MTK_DEBUGLN();
+			MTK_DEBUG(F("Retries left: "));
+			MTK_DEBUGLN(retries);
+			MTK_DEBUG(F("Looking for ack: "));
+			MTK_DEBUGLN(MTK_ACK_SUCCESS);
+			MTK_DEBUG(F("Looking for type: "));
+			MTK_DEBUGLN(type);
+			MTK_DEBUG(F("Was updated: "));
+			MTK_DEBUGLN(updated);
+			MTK_DEBUG(F("ack.value()=="));
+			MTK_DEBUGLN(gotType);
+			MTK_DEBUG(F("ackType.value()=="));
+			MTK_DEBUGLN(gotAck);
 			if(updated) {
-				DEBUGLN();
-				DEBUGLN(F("Updated"));
+				MTK_DEBUGLN();
+				MTK_DEBUGLN(F("Updated"));
 				if(gotType==type) {
 					return(gotAck);
 				}
 				else {
-					DEBUGLN();
-					DEBUGLN(F("Type did not match"));
+					MTK_DEBUGLN();
+					MTK_DEBUGLN(F("Type did not match"));
 				}
 			}
 			else {
-				DEBUGLN();
-				DEBUGLN(F("Not updated"));
+				MTK_DEBUGLN();
+				MTK_DEBUGLN(F("Not updated"));
 			}
 		}
 		else {
-			DEBUGLN();
-			DEBUGLN(F("readline failed"));
+			MTK_DEBUGLN();
+			MTK_DEBUGLN(F("readline failed"));
 		}
 	}
 	return(MTK_ACK_TIMEOUT);

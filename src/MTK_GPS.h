@@ -19,16 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef MTK_GPS_H
 #define MTK_GPS_H
 
-// User can set MTK_DEBUG to e.g. Serial to get debug output
-//#define MTK_DEBUG Serial
-
-#ifdef MTK_DEBUG
-#define DEBUG(...) MTK_DEBUG.print(__VA_ARGS__)
-#define DEBUGLN(...) MTK_DEBUG.println(__VA_ARGS__)
-#else
-#define DEBUG(...)
-#define DEBUGLN(...)
-#endif
+//#define MTK_DEBUG(...) Serial.print(__VA_ARGS__)
+//#define MTK_DEBUGLN(...) Serial.println(__VA_ARGS__)
+#define MTK_DEBUG(...)
+#define MTK_DEBUGLN(...)
 
 #include <Arduino.h>
 #include <TinyGPS++.h>
