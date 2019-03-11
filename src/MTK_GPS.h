@@ -45,6 +45,8 @@ typedef int mtk_ack_t;
 #define MTK_CMD_WARM_START 101
 #define MTK_CMD_COLD_START 103
 #define MTK_CMD_FULL_COLD_START 104
+#define MTK_CMD_STANDBY_MODE 161
+#define MTK_SET_NMEA_OUTPUT 314
 #define MTK_SET_AL_DEE_CFG 223
 #define MTK_CMD_PERIODIC_MODE 225
 #define MTK_SET_NMEA_UPDATERATE 220
@@ -69,6 +71,17 @@ class MTK_GPS : public TinyGPSPlus {
 		void fullColdStart();
 		mtk_ack_t setNmeaUpdateRate(const unsigned int rate=1000);
 		mtk_ack_t setNmeaBaudRate(const unsigned long int rate=0);
+		void standby();
+		// Select which types of sentences to send and how often
+		mtk_ack_t setNmeaOutput(
+			const uint8_t GLL=0, // GPGLL interval - Geographic Position - Latitude longitude
+			const uint8_t RMC=0, // GPRMC interval - Recommended Minimum Specific GNSS Sentence
+			const uint8_t VTG=0, // GPVTG interval - Course over Ground and Ground Speed
+			const uint8_t GGA=0, // GPGGA interval - GPS Fix Data
+			const uint8_t GSA=0, // GPGSA interval - GNSS DOPS and Active Satellites
+			const uint8_t GSV=0, // GPGSV interval - GNSS Satellites in View
+			const uint8_t CHN=0  // PMTKCHN interval – GPS channel status
+		);
 		mtk_ack_t extendEphemerisTime(
 			const unsigned int sv=1,
 			const unsigned int snr=30,

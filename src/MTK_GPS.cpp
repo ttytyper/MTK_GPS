@@ -77,6 +77,24 @@ mtk_ack_t MTK_GPS::setNmeaBaudRate(const long unsigned int rate) {
 	return(sendWithAck(MTK_SET_NMEA_BAUDRATE,rate));
 }
 
+// Put the GPS to sleep
+void MTK_GPS::standby() {
+	send(MTK_CMD_STANDBY_MODE);
+}
+
+// Select which types of sentences to send and how often
+mtk_ack_t MTK_GPS::setNmeaOutput(
+	const uint8_t GLL, // GPGLL interval - Geographic Position - Latitude longitude
+	const uint8_t RMC, // GPRMC interval - Recommended Minimum Specific GNSS Sentence
+	const uint8_t VTG, // GPVTG interval - Course over Ground and Ground Speed
+	const uint8_t GGA, // GPGGA interval - GPS Fix Data
+	const uint8_t GSA, // GPGSA interval - GNSS DOPS and Active Satellites
+	const uint8_t GSV, // GPGSV interval - GNSS Satellites in View
+	const uint8_t CHN  // PMTKCHN interval – GPS channel status
+) {
+	return(sendWithAck(MTK_SET_NMEA_OUTPUT,GLL,RMC,VTG,GGA,GSA,GSV,0,0,0,0,0,0,0,0,0,0,0,0,CHN));
+}
+
 // Extend time for receiving ephemeris data
 // Quote from the datasheet, which is a little hard to understand:
 // sv: It means the module need extend the time to receive more ephemeris data while the number of satellite without ephemeris data. Default 1, range 1-4
